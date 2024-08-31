@@ -1,0 +1,1 @@
+IDELAYE2的fixed模式，200MHz，0延时600ps，1延时678ps；300MHz，0延时600ps，1延时652ps
