@@ -3,9 +3,9 @@
 // Company: 
 // Engineer: 
 // 
-// Create Date: 2024/08/31 14:06:50
+// Create Date: 2024/08/31 15:46:04
 // Design Name: 
-// Module Name: tb_idelay_fixed
+// Module Name: tb_idelay_variable
 // Project Name: 
 // Target Devices: 
 // Tool Versions: 
@@ -20,18 +20,24 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module tb_idelay_fixed();
+module tb_idelay_variable();
 
 reg             clk         ;
 reg             rst_n       ;
-reg             data_in     ;
-wire            data_out    ;
-wire    [4:0]   CNTVALUEOUT ;
 
 wire        clk_200MHz  ;
 wire        locked      ;
-
-wire        RDY         ;
+/*IDELAY2*/
+reg             CE          ;
+reg             LD          ;
+reg             INC         ;
+reg             data_in     ;
+//reg     [4:0]   CNTVALUEIN  ;
+wire            data_out    ;
+wire    [4:0]   CNTVALUEOUT ;
+wire            RDY         ;
+/*reg/wire define*/
+reg     [3:0]   cnt ;
 
 initial begin
     clk     <=      1'b0;
@@ -42,12 +48,41 @@ end
 
 always  #5  clk     <=      ~clk    ;
 
-always@(posedge clk or negedge locked)
+always@(posedge clk_200MHz or negedge locked)
     if(locked == 1'b0)
         data_in <=  1'b0;
     else
         data_in <=  {$random} % 2;
-
+/*计数器*/
+always@(posedge clk_200MHz or negedge locked)
+    if(locked == 1'b0)
+        cnt <=  4'd0;
+    else
+        cnt <=  cnt +   1'b1;
+/**/
+always@(posedge clk_200MHz or negedge locked)
+    if(locked == 1'b0)
+        LD <=  1'b0;
+    else    if(cnt == 4'd5)
+        LD <=  1'b1;
+    else
+        LD <=  1'b0;
+always@(posedge clk_200MHz or negedge locked)
+    if(locked == 1'b0)
+        begin
+            CE  <=  1'b0;
+            INC <=  1'b0;
+        end
+    else    if(cnt == 4'd7)
+        begin
+            CE  <=  1'b1;
+            INC <=  1'b1;
+        end
+    else
+        begin
+            CE  <=  1'b0;
+            INC <=  1'b0;
+        end
 clk_wiz_200MHz u_clk_wiz_200MHz
 (
     .clk_out1(clk_200MHz),      // output clk_out1
@@ -57,32 +92,33 @@ clk_wiz_200MHz u_clk_wiz_200MHz
 
 IDELAYCTRL IDELAYCTRL_inst (
       .RDY(RDY),       // 1-bit output: Ready output
-      .REFCLK(clk), // 1-bit input: Reference clock input
+      .REFCLK(clk_200MHz), // 1-bit input: Reference clock input
       .RST(~locked)        // 1-bit input: Active high reset input
    );
    IDELAYE2 #(
       .CINVCTRL_SEL("FALSE"),          // Enable dynamic clock inversion (FALSE, TRUE)
       .DELAY_SRC("DATAIN"),           // Delay input (IDATAIN, DATAIN)
       .HIGH_PERFORMANCE_MODE("FALSE"), // Reduced jitter ("TRUE"), Reduced power ("FALSE")
-      .IDELAY_TYPE("FIXED"),           // FIXED, VARIABLE, VAR_LOAD, VAR_LOAD_PIPE
+      .IDELAY_TYPE("VARIABLE"),           // FIXED, VARIABLE, VAR_LOAD, VAR_LOAD_PIPE
       .IDELAY_VALUE(1),                // Input delay tap setting (0-31)
       .PIPE_SEL("FALSE"),              // Select pipelined mode, FALSE, TRUE
-      .REFCLK_FREQUENCY(300.0),        // IDELAYCTRL clock input frequency in MHz (190.0-210.0, 290.0-310.0).
+      .REFCLK_FREQUENCY(200.0),        // IDELAYCTRL clock input frequency in MHz (190.0-210.0, 290.0-310.0).
       .SIGNAL_PATTERN("DATA")          // DATA, CLOCK input signal
    )
    IDELAYE2_inst (
       .CNTVALUEOUT(CNTVALUEOUT), // 5-bit output: Counter value output
       .DATAOUT(data_out),         // 1-bit output: Delayed data output
-      .C(1'b0),                     // 1-bit input: Clock input
-      .CE(1'b0),                   // 1-bit input: Active high enable increment/decrement input
+      .C(clk_200MHz),                     // 1-bit input: Clock input
+      .CE(CE),                   // 1-bit input: Active high enable increment/decrement input
       .CINVCTRL(1'b0),       // 1-bit input: Dynamic clock inversion input
-      .CNTVALUEIN(5'd0),   // 5-bit input: Counter value input
+      .CNTVALUEIN(5'b0),   // 5-bit input: Counter value input
       .DATAIN(data_in),           // 1-bit input: Internal delay data input
       .IDATAIN(1'b0),         // 1-bit input: Data input from the I/O
-      .INC(1'b0),                 // 1-bit input: Increment / Decrement tap delay input
-      .LD(1'b0),                   // 1-bit input: Load IDELAY_VALUE input
+      .INC(INC),                 // 1-bit input: Increment / Decrement tap delay input
+      .LD(LD),                   // 1-bit input: Load IDELAY_VALUE input
       .LDPIPEEN(1'b0),       // 1-bit input: Enable PIPELINE register to load data input
       .REGRST(~locked)            // 1-bit input: Active-high reset tap-delay input
    );
+
 
 endmodule
