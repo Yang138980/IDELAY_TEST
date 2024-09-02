@@ -3,9 +3,9 @@
 // Company: 
 // Engineer: 
 // 
-// Create Date: 2024/09/02 12:43:08
+// Create Date: 2024/08/31 16:53:19
 // Design Name: 
-// Module Name: tb_delay_var_load_pipe
+// Module Name: tb_idelay_var_load
 // Project Name: 
 // Target Devices: 
 // Tool Versions: 
